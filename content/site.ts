@@ -31,4 +31,5 @@ export const nav = [
   { label: "Education", href: "#education" },
   { label: "Labs", href: "/labs" },
   { label: "Contact", href: "#contact" },
+  { label: "Blog", href: "/blog" },
 ];

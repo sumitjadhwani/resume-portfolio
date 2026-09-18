@@ -55,6 +55,21 @@ Never hardcode resume copy in components. Edit the typed content modules:
 - `content/resume.ts` — summary, skills, experience, patents, education, achievements
 - `content/projects.ts` — case studies (drives `/projects/[slug]`)
 - `content/labs.ts` — prototype registry shown on `/labs`
+- `content/blog/*.mdx` — blog posts (frontmatter drives `/blog`, `/blog/[slug]`,
+  `/blog/tag/[tag]` and the sitemap)
+
+## Blog
+
+Posts are MDX files at `content/blog/<slug>.mdx`. Frontmatter: `title`, `date`
+(ISO), `summary`, `tags` (array), optional `draft: true`.
+
+- `lib/blog.ts` reads the folder with `node:fs`, sorts by date, computes reading
+  time, and filters drafts in production. **Do not import it into client
+  components.**
+- Adding a post is just dropping in an `.mdx` file; the index, tag pages and
+  sitemap pick it up automatically (all prerendered via `generateStaticParams`).
+- Code highlighting uses `rehype-pretty-code` + `shiki`; prose styling comes from
+  `@tailwindcss/typography` (loaded with `@plugin` in `app/globals.css`).
 
 ## Adding a prototype (the core design goal)
 
@@ -72,9 +87,13 @@ Reference implementation: `app/labs/rag-chat` + `components/labs/chat-demo.tsx` 
 
 ## Conventions & constraints
 
-- No git repository is initialized; do not `git init`/commit unless asked.
+- Git repo is initialized at this project level (`main`, remote `origin` →
+  `sumitjadhwani/resume-portfolio`); commit/push only when asked.
 - `.env.local` is gitignored; `.env.example` is intentionally committed.
 - `public/resume.pdf` is a binary asset (Prettier-ignored) — the "Download CV"
   target. Replace the file, don't edit it.
+- `site.url` resolves `NEXT_PUBLIC_SITE_URL` → `VERCEL_PROJECT_PRODUCTION_URL` →
+  fallback. Treat empty/whitespace env values as unset (`||`, not `??`), or
+  `new URL()` throws at build.
 - Placeholders to confirm with the user before publishing: `socials.linkedin`,
   `socials.github` and `site.url` in `content/site.ts`.

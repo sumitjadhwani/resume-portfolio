@@ -38,13 +38,17 @@ app/
   page.tsx                 # single-page portfolio (all sections)
   projects/                # project listing + [slug] case studies
   labs/                    # interactive prototypes (index + one route each)
+  blog/                    # blog index, [slug] posts, tag/[tag] pages
   api/chat/route.ts        # streaming RAG endpoint
   sitemap.ts / robots.ts   # SEO routes
 components/
   sections/                # one component per home section
   labs/                    # prototype UIs
+  blog/                    # post card + MDX component mappings
 content/                   # typed resume, projects, labs, site config
+  blog/*.mdx               # blog posts (MDX + frontmatter)
 lib/rag/                   # retriever + LLM client interfaces
+lib/blog.ts                # blog reader (fs, tags, reading time, drafts)
 public/resume.pdf          # downloadable CV
 ```
 
@@ -56,6 +60,27 @@ All content lives in `content/` and is typed:
 - `content/resume.ts` — summary, skills, experience, patents, education, achievements.
 - `content/projects.ts` — project case studies (drives `/projects/[slug]`).
 - `content/labs.ts` — prototype registry shown on `/labs`.
+- `content/blog/*.mdx` — blog posts.
+
+## Writing a blog post
+
+Add an MDX file at `content/blog/<slug>.mdx`:
+
+```mdx
+---
+title: "Post title"
+date: "2026-09-15"
+summary: "One-line description used on cards and in metadata."
+tags: ["RAG", "LLMs"]
+draft: false
+---
+
+Your content, with Markdown and embedded React/MDX.
+```
+
+The index (`/blog`), per-tag pages (`/blog/tag/<tag>`) and the sitemap update
+automatically. Posts are statically generated; `draft: true` hides a post in
+production.
 
 ## Adding an interactive prototype
 

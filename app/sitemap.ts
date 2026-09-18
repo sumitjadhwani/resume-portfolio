@@ -2,10 +2,11 @@ import type { MetadataRoute } from "next";
 import { site } from "@/content/site";
 import { projects } from "@/content/projects";
 import { labs } from "@/content/labs";
+import { getAllPosts, getAllTags } from "@/lib/blog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  const staticRoutes = ["", "/projects", "/labs"].map((path) => ({
+  const staticRoutes = ["", "/projects", "/labs", "/blog"].map((path) => ({
     url: `${site.url}${path}`,
     lastModified: now,
     changeFrequency: "monthly" as const,
@@ -28,5 +29,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     }));
 
-  return [...staticRoutes, ...projectRoutes, ...labRoutes];
+  const postRoutes = getAllPosts().map((post) => ({
+    url: `${site.url}/blog/${post.slug}`,
+    lastModified: new Date(post.date),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
+  const tagRoutes = getAllTags().map(({ tag }) => ({
+    url: `${site.url}/blog/tag/${encodeURIComponent(tag)}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.5,
+  }));
+
+  return [
+    ...staticRoutes,
+    ...projectRoutes,
+    ...labRoutes,
+    ...postRoutes,
+    ...tagRoutes,
+  ];
 }
