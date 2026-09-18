@@ -1,3 +1,10 @@
+const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+
+const siteUrl =
+  rawSiteUrl ||
+  (vercelUrl ? `https://${vercelUrl}` : "https://sumitjadhwani.vercel.app");
+
 export const site = {
   name: "Sumit Jadhwani",
   firstName: "Sumit",
@@ -5,7 +12,7 @@ export const site = {
   title: "Sumit Jadhwani — Software & Gen AI Engineer",
   description:
     "Software Engineer with 4+ years of experience in full-stack development and machine learning, specializing in Python, FastAPI and Gen AI / RAG systems.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://sumitjadhwani.vercel.app",
+  url: siteUrl,
   email: "sumitjadhwani1@gmail.com",
   location: "Pune, India",
   resumePath: "/resume.pdf",
