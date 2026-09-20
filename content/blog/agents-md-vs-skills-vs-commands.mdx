@@ -1,0 +1,133 @@
+---
+title: "AGENTS.md vs Skills vs Commands in opencode"
+date: "2026-09-20"
+summary: "Rules, skills, and commands all customize opencode, but each loads at a different time. Here is how to choose, and what else exists beyond these three."
+tags: ["opencode", "Agents"]
+draft: false
+---
+
+opencode reads a lot of files before it writes a line of code. Rules, skills,
+commands, agents, and config all shape what it does, but they load at different
+times and for different reasons. I set these up for my own projects and the
+distinction took a while to click, so here is the version I wish I had.
+
+The short version: `AGENTS.md` is always on, a skill is loaded by the model when
+it looks relevant, and a command is loaded by you when you type it.
+
+## The three types at a glance
+
+| File        | Who triggers it         | Where it lives                         | What it is                          |
+| ----------- | ----------------------- | -------------------------------------- | ----------------------------------- |
+| `AGENTS.md` | Always, every session   | Project root, or `~/.config/opencode/` | Free-form rules injected as context |
+| Skill       | The model, when it fits | `.opencode/skills/<name>/SKILL.md`     | A playbook loaded on demand         |
+| Command     | You, by typing `/name`  | `.opencode/commands/<name>.md`         | A prompt template you run           |
+
+## AGENTS.md: the always-on context
+
+`AGENTS.md` is the closest thing to a system prompt you control per project.
+opencode walks up from your working directory and loads the first match it finds.
+A global file at `~/.config/opencode/AGENTS.md` applies across every session on
+your machine.
+
+Because it is always in context, keep it short and specific. Build commands, repo
+layout, and gotchas that cost you time belong here. Anything longer belongs in a
+file you reference, not in the always-on block.
+
+I use it for things like the exact command order (`lint`, then `typecheck`, then
+`build`) and the fact that Node lives behind nvm in a non-interactive shell. Both
+are the kind of detail a fresh session will otherwise get wrong.
+
+Two extras worth knowing:
+
+- `/init` generates or improves `AGENTS.md` by scanning the repo.
+- The `instructions` field in `opencode.json` pulls in extra files, globs, or
+  remote URLs, and they are combined with `AGENTS.md`.
+
+Claude Code's `CLAUDE.md` is read as a fallback, so an existing setup keeps
+working.
+
+## Skills: loaded on demand
+
+A skill is a folder with a `SKILL.md` inside. opencode lists every skill and its
+description to the model, and the model loads the full body only when it decides
+the skill fits the task. That is the point: the instructions stay out of context
+until they are relevant.
+
+```md
+---
+name: new-blog
+description: Create a new blog post as MDX in content/blog. Use when asked to write a post or add content on a topic.
+---
+
+# New blog post
+
+...
+```
+
+The frontmatter rules are strict:
+
+- `name` is lowercase, hyphen-separated, 1 to 64 characters, and must match the
+  folder name.
+- `description` is required and capped at 1024 characters. It is the only thing
+  the model sees before loading, so it has to say both what the skill does and
+  when to use it.
+
+Skills live in `.opencode/skills/`, globally in `~/.config/opencode/skills/`, or
+in Claude and `.agents` compatible paths. You can gate them with `permission.skill`
+using allow, ask, or deny patterns, and hide a skill from an agent entirely with
+`tools: { skill: false }`.
+
+## Commands: loaded when you type them
+
+A command is the opposite of a skill. You invoke it, not the model. Create
+`.opencode/commands/<name>.md` and it becomes `/name` in the TUI.
+
+```md
+---
+description: Draft a blog post on the topic in the arguments
+agent: build
+---
+
+Use the new-blog skill, then write a post about $ARGUMENTS.
+```
+
+The body is the template. `$ARGUMENTS` is everything you typed after the command,
+and `$1`, `$2`, and so on pull individual words. You can also run a shell command
+and inject its output, or include a file with `@path/to/file`.
+
+Commands are the right tool for anything you run repeatedly and want one
+keystroke away. If you keep typing the same prompt, make it a command.
+
+## Choosing between them
+
+- The rule applies every time, no matter the task: `AGENTS.md`.
+- The model should decide when it applies: a skill.
+- You should decide, and you want to press a key: a command.
+
+A common pattern uses all three together. `AGENTS.md` points at the skill
+directory, a skill holds the detailed workflow, and a command is the shortcut
+that loads it with a topic.
+
+## What I left out
+
+The three above are the ones people ask about, but they are not the whole system.
+The rest of the surface area:
+
+- **Subagents** (`.opencode/agents/<name>.md`) are separate agents with their own
+  prompt, model, and permissions. They run in their own context and can be
+  invoked with `@name` or by another agent.
+- **Plugins** (`.opencode/plugin/*.ts`) hook into events and mutate behavior at
+  runtime.
+- **MCP servers** add external tools over the Model Context Protocol.
+- **Custom tools** extend the tool list without a full MCP server.
+- **`opencode.json`** ties it together: providers, models, permissions, MCP,
+  plugins, and the `instructions` list.
+
+One gotcha that catches everyone: opencode loads config at startup. Add a new
+skill or command and you have to restart before it shows up.
+
+## The takeaway
+
+The files differ by trigger and lifetime. `AGENTS.md` is permanent context, a
+skill is a library the model checks out, and a command is a macro you fire. Once
+you match the artifact to its trigger, the folder layout stops feeling arbitrary.

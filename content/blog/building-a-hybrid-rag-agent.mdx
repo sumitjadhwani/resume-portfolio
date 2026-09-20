@@ -1,19 +1,19 @@
 ---
 title: "Building a Hybrid RAG + Web-Search Agent"
 date: "2026-09-15"
-summary: "Why pure retrieval and pure generation both failed for a student-support bot, and how a small routing layer between RAG and live web search cut hallucinations by over 90%."
+summary: "Why pure retrieval and pure generation both failed for a student-support bot, and how routing between RAG and live web search cut hallucinations by over 90%."
 tags: ["RAG", "Agents", "LLMs", "Python"]
 draft: false
 ---
 
 When we shipped a conversational assistant for the University of Mississippi, the
 first version was a textbook RAG pipeline: embed the knowledge base, retrieve the
-top-k passages, and let the model answer from them. It worked — until it didn't.
+top-k passages, and let the model answer from them. It worked. Until it didn't.
 
 Two failure modes showed up almost immediately:
 
-1. **Stale answers.** Anything that changed after the last index — deadlines,
-   office hours, policy updates — came back wrong, because retrieval can only
+1. **Stale answers.** Anything that changed after the last index (deadlines,
+   office hours, policy updates) came back wrong, because retrieval can only
    return what was indexed.
 2. **Confident gaps.** When retrieval returned weak matches, the model still
    answered, inventing details to fill the space.
@@ -29,7 +29,7 @@ let it decide per query. The retrieval layer became a small routing step:
 - **Knowledge base** for stable, authoritative content (policies, program
   requirements, internal docs).
 - **Live web search** for anything time-sensitive.
-- **Both** when a question spans the two — retrieve the policy, then check the
+- **Both** when a question spans the two: retrieve the policy, then check the
   current date or status.
 
 The router itself can be a cheap classification call, which keeps the expensive
@@ -55,7 +55,7 @@ evidence. Two rules did most of the work:
   human contact instead of guessing.
 
 That second rule is what moved the hallucination rate. Measuring it was
-unglamorous — we logged answers, labelled whether each was supported by the
+unglamorous. We logged answers, labelled whether each was supported by the
 retrieved context, and iterated. The supported-answer rate went up by more than
 90% relative to the original pipeline.
 
@@ -65,8 +65,8 @@ retrieved context, and iterated. The supported-answer rate went up by more than
   made both jobs worse.
 - **A hard grounding contract.** "Answer only from context, otherwise escalate"
   beats any amount of prompt polishing.
-- **Multi-channel delivery.** The same agent ran on Web, WhatsApp and Telegram —
-  the routing and grounding logic lived in one service, so each channel was just
+- **Multi-channel delivery.** The same agent ran on Web, WhatsApp and Telegram.
+  The routing and grounding logic lived in one service, so each channel was just
   a thin adapter.
 
 The interesting lesson is that the hard part of a RAG agent isn't the retrieval
