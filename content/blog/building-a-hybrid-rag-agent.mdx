@@ -6,34 +6,36 @@ tags: ["RAG", "Agents", "LLMs", "Python"]
 draft: false
 ---
 
-When we shipped a conversational assistant for the University of Mississippi, the
-first version was a textbook RAG pipeline: embed the knowledge base, retrieve the
-top-k passages, and let the model answer from them. It worked. Until it didn't.
+When we shipped the first version of our conversational assistant for the
+University of Mississippi, we implemented a textbook RAG pipeline: embed the
+knowledge base, retrieve the top-k passages, and answer from them. It worked,
+until the conditions were different.
 
-Two failure modes showed up almost immediately:
+We discovered two failure modes in our initial approach:
 
-1. **Stale answers.** Anything that changed after the last index (deadlines,
-   office hours, policy updates) came back wrong, because retrieval can only
-   return what was indexed.
-2. **Confident gaps.** When retrieval returned weak matches, the model still
-   answered, inventing details to fill the space.
+- **Stale answers:** anything that had changed after the last index (deadlines,
+  office hours, etc.) was answered incorrectly, as the retrieval step could only
+  return information known at indexing time.
+- **Confident hallucinations:** when the retrieval returned weak matches, the
+  model often answered confidently, inventing information to fill in the gaps.
 
-Pure web search had the opposite problem: fresh information, but no grounding in
-the university's own documents and policies.
+Pure web search has the inverse problem: it can return fresh information but has
+no grounding in the university's documents and policies.
 
 ## The idea: route instead of choose
 
-Rather than picking one retrieval source, we gave the agent a tool for each and
-let it decide per query. The retrieval layer became a small routing step:
+The solution was a routing layer rather than a choice between sources. We gave
+the agent a tool for each and let it decide based on the query. The retrieval
+layer became a small routing step:
 
-- **Knowledge base** for stable, authoritative content (policies, program
-  requirements, internal docs).
-- **Live web search** for anything time-sensitive.
-- **Both** when a question spans the two: retrieve the policy, then check the
-  current date or status.
+- The knowledge base is used to answer questions about stable, authoritative
+  information (policies, program requirements, and internal documents).
+- Live web search is used for any time-sensitive information.
+- Both are used when the question spans the two: retrieve the policy, then check
+  the current date or status.
 
-The router itself can be a cheap classification call, which keeps the expensive
-model for answering rather than deciding:
+The router itself could be a cheap classification call, which saves the
+expensive model for answering rather than deciding:
 
 ```python
 def route(question: str) -> list[str]:
@@ -46,29 +48,29 @@ def route(question: str) -> list[str]:
 
 ## Grounding is the part that matters
 
-Routing only helps if the final answer is forced to stand on the retrieved
-evidence. Two rules did most of the work:
+Routing only helps if we force the final answer to be grounded in the retrieved
+evidence. Two rules of thumb made most of the difference:
 
 - Every claim in the answer must trace back to a retrieved passage or search
   result.
-- If the evidence is missing or contradictory, the agent says so and offers a
-  human contact instead of guessing.
+- If the evidence is missing or contradictory, the agent should say so and offer
+  a human contact instead of guessing.
 
 That second rule is what moved the hallucination rate. Measuring it was
-unglamorous. We logged answers, labelled whether each was supported by the
-retrieved context, and iterated. The supported-answer rate went up by more than
-90% relative to the original pipeline.
+unglamorous, but we eventually logged answers and labelled whether each was
+supported by the retrieved context. The supported-answer rate increased by more
+than 90% compared to the original pipeline.
 
 ## What I'd keep
 
-- **A separate routing step.** Letting the answering model also choose tools
-  made both jobs worse.
+- **A separate routing step.** Giving the answering model the option to pick
+  tools made it worse at both jobs.
 - **A hard grounding contract.** "Answer only from context, otherwise escalate"
   beats any amount of prompt polishing.
-- **Multi-channel delivery.** The same agent ran on Web, WhatsApp and Telegram.
-  The routing and grounding logic lived in one service, so each channel was just
-  a thin adapter.
+- **Multi-channel delivery.** The agent runs on Web, WhatsApp and Telegram. The
+  routing and grounding logic is the same in all, implemented as a single
+  service and thin adapters on each channel.
 
 The interesting lesson is that the hard part of a RAG agent isn't the retrieval
-algorithm. It's deciding _what to retrieve_, and being disciplined about not
-answering when you have nothing solid to stand on.
+algorithm. It's the question of what to retrieve, and the discipline not to
+answer when you have nothing solid to stand on.
