@@ -1,0 +1,144 @@
+---
+title: "Jev: How a Decision Model Differs From a Regular LLM"
+date: "2026-09-22"
+summary: "Jev replaces token-by-token generation with a parallel sampler that returns typed, calibrated decisions. Here is what changed in the architecture."
+tags: ["LLMs", "Agents"]
+draft: false
+---
+
+On 15 September 2026, TypeSafe AI released Jev, the first in a class it calls
+System One models. It is a frontier model that never writes a sentence. You hand
+it a block of state and a set of typed questions, and it answers with decisions
+and probabilities instead of prose.
+
+That sounds like a small change to an API. It is really a different answer to how
+the model should be built. I have spent the last while wiring retrieval and
+routing layers into agents, so the parts that stood out to me are the ones below.
+Jev isn't a small LLM. It is a model with the generation loop removed and the
+output space fixed in advance.
+
+## What a regular LLM does
+
+A standard LLM is a next-token predictor. Given a sequence of tokens, it produces
+a probability distribution over the next token, samples one, appends it, and
+repeats. Everything you see, from a chat reply to a JSON object to a hallucinated
+citation, comes out of that loop one step at a time.
+
+Training reinforces the behavior people want. RLHF optimizes for responses human
+raters prefer, and RLVR optimizes for outputs a program can check. Both are tuned
+for the string that arrives at the end. The string is flexible, which is why LLMs
+are good at open-ended work, and it is also why the output needs to be parsed and
+validated before any code can trust it. A model that is right 95% of the time but
+cannot flag the other 5% is hard to put inside an automated pipeline.
+
+## What Jev does instead
+
+A Jev request has two parts: a state and one or more questions. The state is the
+text or semi-structured record under consideration. It can be a string, an array
+of strings, or a set of name-value pairs. The questions are typed, and there are
+three kinds:
+
+- Choice questions, where the model picks from a set of options you provide.
+- Score questions, where you give ordered levels and it returns a number along
+  that range.
+- Noul questions, which are yes/no. The name is short for Bernoulli, and you get
+  back a probability between 0 and 1 that the statement is true.
+
+The reply is a typed value per question, with a probability distribution and a
+confidence score. Nothing needs to be parsed, because the shape of the answer was
+fixed before the call.
+
+```python
+import requests
+
+response = requests.post(
+    "https://api.typesafe.ai/v1/systemone",
+    headers={"Authorization": "Bearer YOUR_KEY"},
+    json={
+        "model": "jev-latest",
+        "state": "Customer emailed twice this week about a failed refund...",
+        "questions": {
+            "category": {"type": "choice", "options": ["billing", "technical", "sales"]},
+            "urgency": {"type": "score", "min": 0, "max": 100},
+        },
+    },
+)
+print(response.json())
+```
+
+## The architecture changes that make it work
+
+Three changes do the heavy lifting.
+
+The first is parallel sampling. Jev evaluates every question against the state in
+a single pass rather than decoding one token at a time. There is no
+autoregressive loop, so adding questions to a request adds little latency.
+TypeSafe reports end-to-end times of 70 to 500 milliseconds. Simon Willison noted
+that the questions are evaluated in parallel, so sending many takes about as long
+as sending one.
+
+The second is a schema-bound output. The possible answers are defined up front,
+either as a choice set, a score range, or a yes/no question. A value outside that
+set cannot be represented, which is why TypeSafe says type errors and
+out-of-schema hallucinations are impossible by construction. The honest reading
+is narrower than the marketing. The model can still be wrong about which choice
+is correct. What it can't do is invent a category that was never offered.
+Calibration is what tells you when it is unsure.
+
+The third change is the training objective. Jev is trained with a method TypeSafe
+calls Reinforcement Learning for Calibrated Decisions (RLCD). Where RLHF rewards
+text a human likes, RLCD rewards probabilities that match outcomes, so a 0.9
+should be right about 90% of the time. Calibration is trained in rather than
+requested through a prompt, which is where regular models tend to fall short.
+
+One caveat runs through all of this. TypeSafe hasn't published Jev's exact
+architecture, its weights, or a paper. The company says the model is
+transformer-based and trained on synthetic data, and outside observers have
+suggested it may sit on top of an open-weight LLM. So the mechanism is described
+at the level of properties, not layers.
+
+## What the changes buy you
+
+Removing the generation loop and constraining the output has a few direct
+consequences.
+
+- Speed. The 70 to 500 millisecond range is fast enough to sit inside a request
+  path, and it is one to two orders of magnitude quicker than frontier LLMs that
+  reason for seconds.
+- Cost. Input is $0.042 per million tokens and output is free, because there are
+  no output tokens to bill. TypeSafe's own workflow numbers put a decision at
+  roughly $0.0004 per case.
+- Type safety. There is no JSON to repair and no retry loop for malformed output,
+  which matters when the call is buried a few layers down in a dependency chain.
+- Scale. At that price, running a decision over every row of a large table stops
+  being absurd. The pitch is mapping decisions across big datasets rather than
+  sampling them.
+
+## Where it fits, and where it does not
+
+Jev is built for bounded, repeated decisions: classify, route, score, extract, or
+branch where hand-written rules are too brittle. It works as a fast decision
+layer under an agent, and as a guardrail that scores another model's output.
+Willison described using it for search reranking, fetching candidates with
+something cheap like BM25 and letting Jev score each one.
+
+It's the wrong tool for anything that needs language on the way out. It doesn't
+write code, summaries, or explanations, and it won't tell you why it picked an
+answer. That black-box property is the main thing to weigh. A bare confidence
+number isn't an audit trail, and if a model can quietly encode bias into a
+ranking, few people will notice. It is also, by TypeSafe's own documentation, not
+strong with numbers, dates, or adversarial input.
+
+## What is still unproven
+
+Most of the headline numbers come from TypeSafe's own evaluations. The workflows
+were written by the company's model-capabilities team, the reference answers come
+from other vendors' models, and no independent suite has reproduced the results
+yet. TypeSafe is upfront about this, and its cost figures may be subsidized for
+now. Treat the accuracy parity as promising and the pricing as a bet.
+
+The interesting part is not that Jev is small or cheap. It's that it removes a
+piece most of us assumed was mandatory. When the set of valid answers is known
+ahead of time, you don't need a sequence decoder at all, and a lot of cost and
+latency falls away with it. The trade is real, though: you get a number you can
+act on, and you give up the sentence that explained it.
