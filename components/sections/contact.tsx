@@ -11,7 +11,7 @@ export function Contact() {
           <div className="bg-accent/20 pointer-events-none absolute -top-24 left-1/2 h-56 w-[32rem] -translate-x-1/2 rounded-full blur-[100px]" />
           <div className="relative">
             <p className="text-accent mb-3 font-mono text-xs tracking-widest uppercase">
-              08 — Contact
+              07 — Contact
             </p>
             <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               Let&apos;s build something

@@ -27,9 +27,7 @@ export const nav = [
   { label: "Skills", href: "#skills" },
   { label: "Experience", href: "#experience" },
   { label: "Projects", href: "#projects" },
-  { label: "Patents", href: "#patents" },
   { label: "Education", href: "#education" },
-  { label: "Labs", href: "/labs" },
   { label: "Contact", href: "#contact" },
   { label: "Blog", href: "/blog" },
 ];

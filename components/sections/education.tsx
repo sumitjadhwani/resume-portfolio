@@ -6,7 +6,7 @@ export function Education() {
   return (
     <Section id="education">
       <SectionHeading
-        kicker="06 — Education"
+        kicker="05 — Education"
         title="Academic background"
         description="Formal training in information technology, plus an intensive Gen AI cohort."
       />
