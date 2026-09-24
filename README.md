@@ -113,3 +113,5 @@ site works out of the box.
 The repo is Vercel-ready with zero extra config. Import it, set the environment
 variables above (production), and deploy. Update `NEXT_PUBLIC_SITE_URL` to the
 final domain so canonical URLs and the sitemap are correct.
+
+
