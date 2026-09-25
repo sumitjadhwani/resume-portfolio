@@ -11,7 +11,7 @@ export const site = {
   role: "Software & Gen AI Engineer",
   title: "Sumit Jadhwani — Software & Gen AI Engineer",
   description:
-    "Software Engineer with 4+ years of experience in full-stack development and machine learning, specializing in Python, FastAPI and Gen AI / RAG systems.",
+    "Software Engineer with 5+ years of experience in full-stack development and machine learning, specializing in Python, FastAPI and Gen AI / RAG systems.",
   url: siteUrl,
   email: "sumitjadhwani1@gmail.com",
   location: "Pune, India",

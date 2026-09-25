@@ -42,7 +42,7 @@ export type AchievementGroup = {
 
 export const profile = {
   summary:
-    "Software Engineer with 4+ years of experience in full-stack development and machine learning, specializing in Python, FastAPI, Java and Gen AI solutions. Proven track record of implementing innovative technical solutions across cloud platforms and AI technologies, from hybrid RAG agents serving production users to a patented PII-masking system.",
+    "Software Engineer with 5+ years of experience in full-stack development and machine learning, specializing in Python, FastAPI, Java and Gen AI solutions. Proven track record of implementing innovative technical solutions across cloud platforms and AI technologies, from hybrid RAG agents serving production users to a patented PII-masking system.",
   focus: [
     "Gen AI & RAG systems",
     "LLM fine-tuning",

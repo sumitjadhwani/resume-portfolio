@@ -8,7 +8,7 @@ export function Experience() {
       <SectionHeading
         kicker="03 — Experience"
         title="Where I've worked"
-        description="Four years across applied AI and backend engineering, from associate to Gen AI engineer."
+        description="Five years across applied AI and backend engineering, from associate to Gen AI engineer."
       />
       <ol className="border-border relative space-y-12 border-l pl-6 sm:pl-8">
         {experience.map((job) => (

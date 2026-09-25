@@ -5,13 +5,6 @@ import { profile } from "@/content/resume";
 import { site } from "@/content/site";
 import { Container } from "@/components/container";
 
-const stats = [
-  { value: "4+", label: "Years experience" },
-  { value: "90%", label: "Fewer hallucinations" },
-  { value: "10K", label: "Concurrent users" },
-  { value: "1", label: "US patent filed" },
-];
-
 export function Hero() {
   return (
     <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
@@ -76,17 +69,6 @@ export function Hero() {
               </a>
             </div>
           </div>
-
-          <dl className="border-border mt-14 grid grid-cols-2 gap-6 border-t pt-8 sm:grid-cols-4">
-            {stats.map((stat) => (
-              <div key={stat.label}>
-                <dt className="font-mono text-2xl font-semibold text-white">
-                  {stat.value}
-                </dt>
-                <dd className="text-muted mt-1 text-sm">{stat.label}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
       </Container>
     </section>
