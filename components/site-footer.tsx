@@ -64,9 +64,6 @@ export function SiteFooter() {
           <p>
             © {year} {site.name}. All rights reserved.
           </p>
-          <p className="font-mono">
-            Built with Next.js, TypeScript &amp; Tailwind CSS
-          </p>
         </div>
       </Container>
     </footer>
